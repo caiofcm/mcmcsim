@@ -490,11 +490,72 @@ class MCMCRunner():
             plt.close()
         return fig
 
+    def plot_predictions(self,
+        plot_type='area',
+        multiplier_std=3,
+        include_experimental_std = True,
+        plot_experimentals = True,
+        input_mapping_to_use=None,
+        thin=1,
+        discard=0,
+    ):
+
+        out_hist = self.get_outputs_history(thin=thin, discard=discard, flat=True)
+        ys_hist = {
+            y_name: np.array([out[index] for out in out_hist])
+            for index, y_name in enumerate(self.output_exp.keys())
+        }
+
+        dict_means = {
+            y_name: values.mean(axis=0)
+            for y_name, values in ys_hist.items()
+        }
+        dict_stds = {
+            y_name: values.std(axis=0)
+            for y_name, values in ys_hist.items()
+        }
+
+        if input_mapping_to_use is None:
+            input_mapping_to_use = {
+                y_name: list(self.inputs.keys())[0]
+                for y_name in self.output_exp
+            }
+
+        for y_name, mean_vals in dict_means.items():
+            plt.figure(figsize=(15, 8))
+            abscissa_name = input_mapping_to_use[y_name]
+            abscissa = self.inputs[abscissa_name].values
+            std_vals = (dict_stds[y_name] + self.output_exp[y_name].sigma) \
+                if include_experimental_std \
+                else dict_stds[y_name]
+            y_err_values = std_vals * multiplier_std
+
+            if plot_type == 'errorbar':
+                plt.errorbar(abscissa, mean_vals, yerr=y_err_values)
+            elif plot_type == 'area':
+                plt.fill_between(abscissa, mean_vals - y_err_values, mean_vals + y_err_values, alpha=0.2)
+            else:
+                raise ValueError('plot_type not recognised')
+
+            if plot_experimentals:
+                plt.plot(abscissa, self.output_exp[y_name].values, 'o')
+
+            plt.xlabel(abscissa_name)
+            plt.ylabel(y_name)
+        return
+
     # def get_outputs_history(self, flat=False, thin=1, discard=0):
     #     return self.sampler.backend.get_outputs_history(flat=flat, thin=thin, discard=discard)
     def get_outputs_history(self, flat=True, thin=1, discard=0):
         return self.sampler.get_blobs(flat=flat, thin=thin, discard=discard)
 
+    def get_output_history_as_dict(self, flat=True, thin=1, discard=0):
+        out_hist = self.get_outputs_history(thin=thin, discard=discard, flat=flat)
+        ys_hist = {
+            y_name: np.array([out[index] for out in out_hist])
+            for index, y_name in enumerate(self.output_exp.keys())
+        }
+        return ys_hist
 
 def display_marginalized_intervals(runner, sample_kw):
     from IPython.display import display, Math
