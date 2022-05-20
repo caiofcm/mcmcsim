@@ -577,6 +577,7 @@ def dict_to_record_sigma_var(d_var):
     dtypes_inputs = [(key, np.float, d_var[key].values.size) for key in d_var]
     dtypes_inputs = []
     input_h5_arr = []
+    # input_h5_lst = []
     for key in d_var:
         dt_val = (key, np.float, d_var[key].values.size)
         sigma_val = ('sigma_{}'.format(key), np.float, d_var[key].values.size)
@@ -587,8 +588,8 @@ def dict_to_record_sigma_var(d_var):
         input_h5_arr += [inp.values]
         input_h5_arr += [inp.sigma]
 
-        input_h5_tp = tuple(input_h5_arr)
-        input_h5_lst = [input_h5_tp]
+    input_h5_tp = tuple(input_h5_arr)
+    input_h5_lst = [input_h5_tp]
 
     input_as_array = np.array(input_h5_lst, dtypes_inputs)
     return input_as_array
